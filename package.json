@@ -2,7 +2,6 @@
   "name": "n8n-to-code",
   "version": "1.0.0",
   "description": "Turn an n8n workflow export into readable Node.js you can actually reason about.",
-  "type": "module",
   "main": "convert.js",
   "bin": { "n8n-to-code": "cli.js" },
   "scripts": { "start": "node cli.js" },

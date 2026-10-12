@@ -5,9 +5,9 @@
 //   node cli.js workflow.json -o out.js       write to a file
 //   node cli.js ./folder --report             coverage stats across a whole folder
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs'
-import { join, extname, basename } from 'node:path'
-import { convert } from './convert.js'
+const { readFileSync, writeFileSync, readdirSync, statSync } = require('node:fs')
+const { join, extname } = require('node:path')
+const { convert } = require('./convert.js')
 
 const args = process.argv.slice(2)
 const target = args.find((a) => !a.startsWith('-'))

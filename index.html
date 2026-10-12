@@ -112,8 +112,9 @@ In n8n: open a workflow → ⋯ menu → Download"></textarea>
   </footer>
 </div>
 
-<script type="module">
-import { convert } from './convert.js'
+<script src="convert.js"></script>
+<script>
+const { convert } = window.n8nToCode
 
 const $ = id => document.getElementById(id)
 const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))

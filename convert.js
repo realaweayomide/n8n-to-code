@@ -331,7 +331,7 @@ function orderNodes(nodes, connections) {
  * @param {object|string} workflow  parsed n8n JSON, or the raw string
  * @returns {{code:string, report:object}}
  */
-export function convert(workflow) {
+function convert(workflow) {
   const wf = typeof workflow === 'string' ? JSON.parse(workflow) : workflow
   const all = wf.nodes || []
   if (!all.length) throw new Error('No nodes found — is this an n8n workflow export?')
@@ -401,3 +401,8 @@ export function convert(workflow) {
     },
   }
 }
+
+// Works three ways: a plain <script> in the browser (so opening index.html from disk works —
+// ES module imports are blocked over file://), a CommonJS require in Node, and the CLI.
+if (typeof module !== 'undefined' && module.exports) module.exports = { convert }
+if (typeof window !== 'undefined') window.n8nToCode = { convert }
