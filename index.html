@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>n8n → Code — turn a workflow into readable Node.js</title>
+<meta name="description" content="Paste an n8n workflow export, get readable Node.js. Runs entirely in your browser — your workflow never leaves the page.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://realaweayomide.github.io/n8n-to-code/">
+<meta property="og:title" content="n8n → Code — turn a workflow into readable Node.js">
+<meta property="og:description" content="Paste an n8n workflow export, get readable Node.js. Tested against 5,000 real workflows.">
+<meta property="og:image" content="https://realaweayomide.github.io/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0b0d12;--card:#141824;--soft:#11141b;--line:#232838;--text:#e8ebf2;--muted:#9aa3b5;
+    --accent:#6ee7b7;--accent-2:#60a5fa;--warn:#fbbf24;
+    --font:'Inter',system-ui,-apple-system,Segoe UI,sans-serif;--display:'Space Grotesk',var(--font);
+    --mono:'JetBrains Mono',ui-monospace,Consolas,monospace}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6;min-height:100vh;
+    background-image:radial-gradient(900px 500px at 85% -10%,rgba(110,231,183,.12),transparent 60%),
+                     radial-gradient(700px 400px at -5% 100%,rgba(96,165,250,.10),transparent 55%);
+    background-attachment:fixed}
+  .wrap{max-width:1080px;margin:0 auto;padding:44px 22px 80px}
+  h1{font-family:var(--display);font-size:clamp(28px,5vw,40px);margin:0 0 10px;font-weight:700}
+  h1 .g{color:var(--accent)}
+  .sub{color:var(--muted);font-size:17px;margin:0 0 6px;max-width:680px}
+  .note{color:var(--muted);font-size:14px;margin:0 0 26px}
+  .note b{color:var(--accent)}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column}
+  .panel h2{font-family:var(--display);font-size:12px;letter-spacing:1.4px;text-transform:uppercase;
+    color:var(--muted);margin:0 0 12px;font-weight:600}
+  textarea,pre{flex:1;min-height:360px;background:var(--soft);color:var(--text);border:1px solid var(--line);
+    border-radius:10px;padding:14px;font-family:var(--mono);font-size:12.5px;line-height:1.65;margin:0}
+  textarea{resize:vertical;width:100%}
+  textarea:focus{outline:none;border-color:var(--accent)}
+  pre{overflow:auto;white-space:pre;max-height:560px}
+  .drop{border:2px dashed var(--line);border-radius:10px;padding:14px;text-align:center;color:var(--muted);
+    font-size:13.5px;cursor:pointer;margin-bottom:10px;transition:.15s}
+  .drop:hover,.drop.over{border-color:var(--accent);color:var(--text);background:var(--soft)}
+
+  .btns{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 22px}
+  button{font:inherit;font-size:14px;font-weight:600;padding:11px 18px;border-radius:9px;border:1px solid var(--line);
+    background:var(--card);color:var(--text);cursor:pointer;transition:.15s}
+  button:hover:not(:disabled){transform:translateY(-1px);border-color:var(--accent)}
+  button.primary{background:var(--accent);color:#07120d;border-color:transparent}
+  button:disabled{opacity:.45;cursor:default;transform:none}
+
+  .report{display:none;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:18px}
+  .report.show{display:block}
+  .stats{display:flex;gap:26px;flex-wrap:wrap;margin-bottom:14px}
+  .stat .k{font-family:var(--display);font-size:26px;font-weight:700;color:var(--accent)}
+  .stat .v{font-size:12.5px;color:var(--muted)}
+  .bar{height:8px;border-radius:99px;background:var(--soft);overflow:hidden;margin-bottom:12px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+  .todo{font-size:13px;color:var(--muted)}
+  .todo b{color:var(--warn);font-weight:600}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chip{font-size:11.5px;font-family:var(--mono);background:var(--soft);border:1px solid var(--line);
+    border-radius:999px;padding:3px 10px;color:var(--muted)}
+  .err{color:#fca5a5;font-family:var(--font);font-size:14px}
+  footer{margin-top:36px;text-align:center;color:var(--muted);font-size:13px}
+  footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>n8n → <span class="g">Code</span></h1>
+  <p class="sub">Paste an n8n workflow export and get readable Node.js — the real execution order, the HTTP calls, the branching, your Code nodes inlined. The integrations it can't write become clearly-marked TODOs with your original settings preserved.</p>
+  <p class="note">Runs <b>entirely in your browser</b>. Your workflow is never uploaded anywhere. · Tested against <b>5,000 real workflows</b>.</p>
+
+  <div class="report" id="report">
+    <div class="stats">
+      <div class="stat"><div class="k" id="sStats">—</div><div class="v">steps converted</div></div>
+      <div class="stat"><div class="k" id="sCov">—</div><div class="v">coverage</div></div>
+      <div class="stat"><div class="k" id="sNotes">—</div><div class="v">sticky notes skipped</div></div>
+    </div>
+    <div class="bar"><i id="bar" style="width:0%"></i></div>
+    <div class="todo" id="todo"></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Workflow JSON</h2>
+      <div class="drop" id="drop">Drop a <b>.json</b> export here, or click to choose</div>
+      <textarea id="in" spellcheck="false" placeholder="Paste your n8n workflow JSON here…
+
+In n8n: open a workflow → ⋯ menu → Download"></textarea>
+      <input type="file" id="file" accept=".json" style="display:none">
+    </div>
+    <div class="panel">
+      <h2>Node.js</h2>
+      <pre id="out"><span style="color:var(--muted)">Converted code appears here…</span></pre>
+    </div>
+  </div>
+
+  <div class="btns">
+    <button class="primary" id="go">Convert →</button>
+    <button id="sample">Load example</button>
+    <button id="copy">Copy code</button>
+    <button id="download">Download .js</button>
+    <button id="clear">Clear</button>
+  </div>
+
+  <footer>
+    Built by <a href="https://github.com/realaweayomide">Ayomide Awe</a> ·
+    <a href="https://github.com/realaweayomide/n8n-to-code">source &amp; CLI on GitHub</a>
+  </footer>
+</div>
+
+<script type="module">
+import { convert } from './convert.js'
+
+const $ = id => document.getElementById(id)
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))
+let lastCode = ''
+
+const SAMPLE = {
+  name: "Daily HN digest",
+  nodes: [
+    { name: "Every morning", type: "n8n-nodes-base.scheduleTrigger",
+      parameters: { rule: { interval: [{ field: "days", triggerAtHour: 8 }] } } },
+    { name: "Fetch top stories", type: "n8n-nodes-base.httpRequest",
+      parameters: { method: "GET", url: "https://hacker-news.firebaseio.com/v0/topstories.json" } },
+    { name: "Keep first 10", type: "n8n-nodes-base.code",
+      parameters: { jsCode: "const ids = items[0].json.slice(0, 10);\nreturn { ids };" } },
+    { name: "Any stories?", type: "n8n-nodes-base.if",
+      parameters: { conditions: { conditions: [
+        { leftValue: "={{ $json.ids.length }}", rightValue: 0, operator: { operation: "gt" } } ] } } },
+    { name: "Post to Slack", type: "n8n-nodes-base.slack",
+      parameters: { channel: "#general", text: "={{ $json.ids }}" } },
+    { name: "Notes", type: "n8n-nodes-base.stickyNote", parameters: { content: "runs daily" } }
+  ],
+  connections: {
+    "Every morning":    { main: [[{ node: "Fetch top stories", type: "main", index: 0 }]] },
+    "Fetch top stories":{ main: [[{ node: "Keep first 10", type: "main", index: 0 }]] },
+    "Keep first 10":    { main: [[{ node: "Any stories?", type: "main", index: 0 }]] },
+    "Any stories?":     { main: [[{ node: "Post to Slack", type: "main", index: 0 }]] }
+  }
+}
+
+function run(){
+  const raw = $('in').value.trim()
+  if(!raw){ $('out').innerHTML = '<span class="err">Paste a workflow first.</span>'; return }
+  try{
+    const { code, report } = convert(raw)
+    lastCode = code
+    $('out').textContent = code
+    showReport(report)
+  }catch(err){
+    $('report').classList.remove('show')
+    $('out').innerHTML = '<span class="err">' + esc(err.message) + '</span>'
+  }
+}
+
+function showReport(r){
+  $('report').classList.add('show')
+  $('sStats').textContent = r.translated + ' / ' + r.steps
+  $('sCov').textContent = r.coverage + '%'
+  $('sNotes').textContent = r.stickyNotes
+  $('bar').style.width = r.coverage + '%'
+  if(r.unsupported.length){
+    const types = [...new Set(r.unsupported.map(u => u.type.replace('n8n-nodes-base.','')))]
+    $('todo').innerHTML = '<b>' + r.needsWork + ' step' + (r.needsWork>1?'s':'') +
+      '</b> need wiring up by hand — search the output for "TODO:". Your original settings are preserved in comments.' +
+      '<div class="chips">' + types.map(t=>'<span class="chip">'+esc(t)+'</span>').join('') + '</div>' +
+      (r.needsDeps.length ? '<div style="margin-top:10px">Then: <span class="chip">npm i '+r.needsDeps.join(' ')+'</span></div>' : '')
+  } else {
+    $('todo').innerHTML = 'Every step was translated.' +
+      (r.needsDeps.length ? ' Then: <span class="chip">npm i '+r.needsDeps.join(' ')+'</span>' : '')
+  }
+}
+
+$('go').onclick = run
+$('sample').onclick = () => { $('in').value = JSON.stringify(SAMPLE, null, 2); run() }
+$('clear').onclick = () => { $('in').value=''; lastCode=''
+  $('out').innerHTML='<span style="color:var(--muted)">Converted code appears here…</span>'
+  $('report').classList.remove('show') }
+$('copy').onclick = () => { if(!lastCode) return
+  navigator.clipboard.writeText(lastCode).then(()=>{ const b=$('copy'); b.textContent='Copied ✓'
+    setTimeout(()=>b.textContent='Copy code',1300) }) }
+$('download').onclick = () => { if(!lastCode) return
+  const a=document.createElement('a')
+  a.href=URL.createObjectURL(new Blob([lastCode],{type:'text/javascript'}))
+  a.download='workflow.js'; a.click(); URL.revokeObjectURL(a.href) }
+
+// file drop / picker
+const drop=$('drop'), file=$('file')
+drop.onclick = () => file.click()
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over') }
+drop.ondragleave = () => drop.classList.remove('over')
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); read(e.dataTransfer.files[0]) }
+file.onchange = () => read(file.files[0])
+function read(f){ if(!f) return
+  const r=new FileReader(); r.onload = () => { $('in').value = r.result; run() }; r.readAsText(f) }
+</script>
+</body>
+</html>
