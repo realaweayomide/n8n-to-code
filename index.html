@@ -114,7 +114,8 @@ In n8n: open a workflow → ⋯ menu → Download"></textarea>
 
 <script src="convert.js"></script>
 <script>
-const { convert } = window.n8nToCode
+// convert.js is loaded above as a classic script, so `convert` is already a global here.
+// Re-declaring it with const would be a redeclaration error and kill this whole block.
 
 const $ = id => document.getElementById(id)
 const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))
